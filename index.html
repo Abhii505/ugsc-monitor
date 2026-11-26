@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Quality Monitoring and Alert System — Field Logbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet" />
+  <style>
+    /* =====================================================================
+       FIELD-STATION LOGBOOK DESIGN SYSTEM
+       Strict palette: warm paper, ink, vermilion alert, muted green safe, hairline grey
+       Square corners, 1px rules, no gradients, no shadows.
+    ===================================================================== */
+    :root {
+      --paper: #f4f1ea;
+      --paper-tint: #ebe6dc;
+      --ink: #1b1b18;
+      --ink-muted: #5e5c55;
+      --alert: #c8321e;
+      --safe: #4f7a52;
+      --rule: #c8c3b6;
+      --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      border-radius: 0;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, select {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      padding: 5px 10px;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+
+    button:hover, select:hover {
+      background: var(--paper-tint);
+    }
+
+    button:active {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    button.active-toggle {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    button.btn-alert {
+      border-color: var(--alert);
+      color: var(--alert);
+    }
+
+    button.btn-alert:hover {
+      background: var(--alert);
+      color: var(--paper);
+    }
+
+    /* TOP ALERT BANNER */
+    #alert-banner {
+      display: none;
+      background: var(--alert);
+      color: var(--paper);
+      padding: 8px 20px;
+      border-bottom: 1px solid var(--ink);
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    #alert-banner.visible {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ERROR / OFFLINE STRIP */
+    #error-strip {
+      display: none;
+      background: var(--paper-tint);
+      border-bottom: 1px solid var(--alert);
+      padding: 10px 20px;
+      color: var(--alert);
+      font-size: 12px;
+    }
+
+    #error-strip.visible {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .strip-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* PAGE SHELL */
+    .shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 18px 20px 40px;
+    }
+
+    /* MASTHEAD */
+    header.masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-bottom: 14px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .masthead-left h1 {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 600;
+      margin: 0 0 4px 0;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+    }
+
+    .masthead-meta {
+      font-size: 11px;
+      color: var(--ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    #sample-stamp {
+      display: none;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border: 1px solid var(--alert);
+      color: var(--alert);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      width: fit-content;
+    }
+
+    #sample-stamp.visible {
+      display: inline-block;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .control-label {
+      font-size: 11px;
+      color: var(--ink-muted);
+      text-transform: uppercase;
+    }
+
+    .countdown-box {
+      font-size: 11px;
+      padding: 5px 8px;
+      border: 1px solid var(--rule);
+      color: var(--ink-muted);
+      min-width: 112px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* SUMMARY STRIP */
+    .summary-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 18px;
+    }
+
+    .summary-cell {
+      padding: 10px 18px 10px 0;
+      margin-right: 18px;
+      border-right: 1px solid var(--rule);
+      min-width: 120px;
+    }
+
+    .summary-cell:last-child {
+      border-right: none;
+    }
+
+    .summary-k {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-muted);
+    }
+
+    .summary-v {
+      font-size: 18px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+    }
+
+    .text-safe { color: var(--safe); }
+    .text-alert { color: var(--alert); }
+    .text-muted { color: var(--ink-muted); }
+
+    /* ASYMMETRIC LAYOUT */
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* SECTION HEADERS */
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+
+    .section-head h2 {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .section-tag {
+      font-size: 11px;
+      color: var(--ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* TABLES */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 22px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th, td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-muted);
+      background: var(--paper-tint);
+      border-bottom: 1px solid var(--ink);
+      text-align: left;
+      font-weight: 600;
+    }
+
+    th.num, td.num {
+      text-align: right;
+    }
+
+    tbody tr.station-row {
+      cursor: pointer;
+    }
+
+    tbody tr.station-row:hover {
+      background: var(--paper-tint);
+    }
+
+    tbody tr.station-row.selected {
+      background: var(--paper-tint);
+      box-shadow: inset 3px 0 0 var(--ink);
+    }
+
+    .st-name {
+      font-weight: 600;
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+
+    .st-sub {
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    /* STATUS TAGS */
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--ink);
+    }
+
+    .badge-safe {
+      border-color: var(--safe);
+      color: var(--safe);
+    }
+
+    .badge-warning {
+      border-color: var(--ink);
+      color: var(--ink);
+      background: var(--paper-tint);
+    }
+
+    .badge-unsafe {
+      border-color: var(--alert);
+      background: var(--alert);
+      color: var(--paper);
+    }
+
+    .badge-stale {
+      border-color: var(--rule);
+      color: var(--ink-muted);
+    }
+
+    /* DETAIL PANEL & CHARTS */
+    #detail-panel {
+      border: 1px solid var(--ink);
+      padding: 14px;
+      margin-bottom: 22px;
+      background: var(--paper);
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+
+    .detail-title {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 3px 0;
+    }
+
+    .detail-meta {
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-box {
+      border: 1px solid var(--rule);
+      padding: 10px;
+    }
+
+    .chart-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .chart-label {
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .chart-val {
+      font-weight: 600;
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chart-stats {
+      font-size: 11px;
+      color: var(--ink-muted);
+      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* RIGHT COLUMN: WQI RANKING */
+    .wqi-note {
+      font-size: 11px;
+      color: var(--ink-muted);
+      margin: 0 0 10px 0;
+    }
+
+    .wqi-list {
+      border-top: 1px solid var(--rule);
+      margin-bottom: 14px;
+    }
+
+    .wqi-item {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .wqi-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .wqi-station {
+      font-weight: 600;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .wqi-score {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .wqi-bar-track {
+      height: 5px;
+      background: var(--paper-tint);
+      border: 1px solid var(--rule);
+      margin: 5px 0;
+      position: relative;
+    }
+
+    .wqi-bar-fill {
+      height: 100%;
+      background: var(--ink);
+    }
+
+    .wqi-bar-fill.fill-safe { background: var(--safe); }
+    .wqi-bar-fill.fill-alert { background: var(--alert); }
+
+    .wqi-breakdown {
+      font-size: 11px;
+      color: var(--ink-muted);
+    }
+
+    /* ABOUT WQI METHOD */
+    details.method-box {
+      border: 1px solid var(--rule);
+      padding: 8px 10px;
+      margin-bottom: 22px;
+      background: var(--paper-tint);
+    }
+
+    details.method-box summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .method-body {
+      margin-top: 10px;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .formula-block {
+      border-left: 2px solid var(--ink);
+      padding-left: 8px;
+      margin: 8px 0;
+      font-family: var(--font-mono);
+    }
+
+    /* ALERT LOG */
+    .log-panel {
+      border-top: 1px solid var(--rule);
+    }
+
+    .log-list {
+      max-height: 380px;
+      overflow-y: auto;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .log-entry {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 11px;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .log-sev-unsafe {
+      color: var(--alert);
+      font-weight: 600;
+    }
+
+    .log-sev-warning {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .empty-state {
+      padding: 18px 0;
+      color: var(--ink-muted);
+      font-size: 12px;
+    }
+
+    footer.log-footer {
+      margin-top: 28px;
+      padding-top: 10px;
+      border-top: 1px solid var(--rule);
+      font-size: 11px;
+      color: var(--ink-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ACTIVE ALERT BANNER -->
+  <div id="alert-banner" role="alert">
+    <div id="alert-banner-text"></div>
+    <div class="strip-actions">
+      <button id="btn-banner-mute" type="button" style="border-color:#f4f1ea;color:#f4f1ea;background:transparent;">Mute Alarm</button>
+    </div>
+  </div>
+
+  <!-- ERROR / OFFLINE STRIP -->
+  <div id="error-strip" role="status">
+    <div id="error-strip-text"></div>
+    <div class="strip-actions">
+      <button id="btn-retry" type="button" class="btn-alert">Retry Live Fetch</button>
+      <button id="btn-error-sample" type="button">Load sample data</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- MASTHEAD -->
+    <header class="masthead">
+      <div class="masthead-left">
+        <h1>Water Quality Monitoring &amp; Alert System</h1>
+        <div class="masthead-meta">Field Logbook &middot; USGS Water Data OGC API &middot; BIS IS 10500:2012 / WHO &middot; Weighted Arithmetic WQI</div>
+        <div id="sample-stamp">SAMPLE DATA, NOT LIVE</div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label class="control-label" for="state-select">State</label>
+          <select id="state-select" aria-label="USGS State Selector">
+            <option value="AUTO">AUTO (CO, VA, WI, OH, GA)</option>
+            <option value="CO">CO — Colorado</option>
+            <option value="VA">VA — Virginia</option>
+            <option value="WI">WI — Wisconsin</option>
+            <option value="OH">OH — Ohio</option>
+            <option value="GA">GA — Georgia</option>
+            <option value="OR">OR — Oregon</option>
+            <option value="PA">PA — Pennsylvania</option>
+            <option value="NY">NY — New York</option>
+          </select>
+        </div>
+
+        <button id="btn-refresh" type="button">Refresh Now</button>
+        <button id="btn-sample" type="button">Load sample data</button>
+        <button id="btn-mute" type="button">Alarm: ON</button>
+        <button id="btn-notify" type="button">Enable Notifications</button>
+        <div class="countdown-box" id="countdown-box">POLL --s</div>
+      </div>
+    </header>
+
+    <!-- INSTRUMENT SUMMARY STRIP -->
+    <section class="summary-strip" aria-label="Station Summary">
+      <div class="summary-cell">
+        <div class="summary-k">Active Stations</div>
+        <div class="summary-v" id="sum-total">--</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-k">Safe</div>
+        <div class="summary-v text-safe" id="sum-safe">--</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-k">Warning / Unsafe</div>
+        <div class="summary-v text-alert" id="sum-alert">--</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-k">Stale (&gt;2h)</div>
+        <div class="summary-v text-muted" id="sum-stale">--</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-k">Source Mode</div>
+        <div class="summary-v" id="sum-mode" style="font-size:13px;padding-top:4px;">INITIALIZING</div>
+      </div>
+    </section>
+
+    <!-- MAIN ASYMMETRIC WORKSPACE -->
+    <main class="workspace">
+      <!-- LEFT COLUMN: PART A (LIVE DASHBOARD + STATION DETAIL) -->
+      <div>
+        <div class="section-head">
+          <h2>A. Live Station Telemetry</h2>
+          <span class="section-tag" id="table-status-tag">Waiting for USGS OGC response...</span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="station-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Station / Site ID</th>
+                <th class="num">pH</th>
+                <th class="num">Turbidity</th>
+                <th class="num">TDS (est.) mg/L</th>
+                <th class="num">Temp &deg;C</th>
+                <th class="num">WQI</th>
+                <th>Status</th>
+                <th>7d Sparkline (WQI)</th>
+              </tr>
+            </thead>
+            <tbody id="station-tbody">
+              <tr>
+                <td colspan="9" class="empty-state">Discovering active USGS stations with pH, turbidity, conductance, and temperature...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- STATION DETAIL PANEL -->
+        <section id="detail-panel" aria-label="Selected Station Detail">
+          <div class="empty-state" id="detail-empty">Select a station row above to inspect 24h / 7d charts, thresholds, anomalies, and CSV export.</div>
+          <div id="detail-content" style="display:none;">
+            <div class="detail-header">
+              <div>
+                <h3 class="detail-title" id="detail-name">--</h3>
+                <div class="detail-meta" id="detail-meta">--</div>
+              </div>
+              <div class="detail-actions">
+                <button id="btn-win-24h" type="button">24h</button>
+                <button id="btn-win-7d" type="button" class="active-toggle">7d</button>
+                <button id="btn-csv" type="button">Download CSV</button>
+              </div>
+            </div>
+            <div class="charts-grid" id="charts-grid"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN: PART B (WQI RANKING) + PART C (ALERT LOG) -->
+      <div>
+        <!-- PART B: WQI RANKING -->
+        <section aria-label="Water Quality Index Ranking">
+          <div class="section-head">
+            <h2>B. WQI Ranking</h2>
+            <span class="section-tag">Cleanest &rarr; Worst</span>
+          </div>
+          <p class="wqi-note">Lower WQI is better. 0&ndash;25 Excellent &middot; 26&ndash;50 Good &middot; 51&ndash;75 Poor &middot; 76&ndash;100 Very Poor &middot; &gt;100 Unfit for drinking. Temperature excluded (no drinking limit).</p>
+
+          <div class="wqi-list" id="wqi-list">
+            <div class="empty-state">Awaiting station readings...</div>
+          </div>
+
+          <details class="method-box">
+            <summary>About the WQI Method (Weighted Arithmetic)</summary>
+            <div class="method-body">
+              <div>Parameters used: <strong>pH</strong>, <strong>Turbidity</strong>, and <strong>TDS (estimated = 0.64 &times; Specific Conductance)</strong>. Water temperature is excluded because BIS/WHO has no numeric drinking water limit for it.</div>
+              <div class="formula-block">
+                K = 1 / &Sigma;(1 / S<sub>i</sub>)<br />
+                W<sub>i</sub> = K / S<sub>i</sub><br />
+                q<sub>i</sub> = 100 &times; |V<sub>i</sub> &minus; V<sub>id</sub>| / (S<sub>i</sub> &minus; V<sub>id</sub>)<br />
+                WQI = &Sigma;(q<sub>i</sub> &times; W<sub>i</sub>) / &Sigma;W<sub>i</sub>
+              </div>
+              <div>
+                <strong>Standards (S<sub>i</sub>) &amp; Ideal Values (V<sub>id</sub>):</strong><br />
+                &bull; pH: S<sub>i</sub> = 8.5, V<sub>id</sub> = 7.0 (W<sub>i</sub> &approx; 0.3681)<br />
+                &bull; Turbidity: S<sub>i</sub> = 5.0 FNU/NTU, V<sub>id</sub> = 0 (W<sub>i</sub> &approx; 0.6257)<br />
+                &bull; TDS (est.): S<sub>i</sub> = 500 mg/L, V<sub>id</sub> = 0 (W<sub>i</sub> &approx; 0.0063)<br />
+                Constant K &approx; 3.1285, &Sigma;W<sub>i</sub> = 1.0000.
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- PART C: PERSISTENT ALERT LOG -->
+        <section class="log-panel" aria-label="Anomaly and Alert Log">
+          <div class="section-head">
+            <h2>C. Anomaly &amp; Alert Log</h2>
+            <button id="btn-clear-log" type="button" style="padding:3px 8px;font-size:11px;">Clear log</button>
+          </div>
+          <p class="wqi-note">BIS IS 10500 / WHO rules + 7-day rolling median/MAD modified z-score (|z| &gt; 3.5) + consecutive temp jump (&gt; 3 &deg;C). 30-min cooldown per station &amp; parameter.</p>
+          <div class="log-list" id="alert-log-list">
+            <div class="empty-state">No alerts recorded yet.</div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="log-footer">
+      <div>Data source: U.S. Geological Survey (USGS) Modern Water Data OGC API (api.waterdata.usgs.gov/ogcapi/v1).</div>
+      <div>TDS (estimated) = 0.64 &times; Specific Conductance (&mu;S/cm). All calculations run locally in browser.</div>
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    /* =====================================================================
+       1. CONFIGURATION OBJECT
+       Central place for USGS Modern OGC API endpoints, state bounding boxes,
+       parameter codes, BIS/WHO limits, WQI standards, and anomaly thresholds.
+    ===================================================================== */
+    const CONFIG = {
+      OGC_BASE: "https://api.waterdata.usgs.gov/ogcapi/v1/collections",
+      PARAM_CODES: {
+        temp: "00010",       // Water temperature (°C)
+        cond: "00095",       // Specific conductance (µS/cm)
+        ph: "00400",         // pH (standard units)
+        turbFNU: "63680",    // Turbidity (FNU)
+        turbNTU: "00076"     // Turbidity (NTU fallback if 63680 absent)
+      },
+      // Bounding boxes [west, south, east, north] for fast OGC spatial filtering
+      STATE_BBOX: {
+        CO: "-109.06,36.99,-102.04,41.00",
+        VA: "-83.68,36.54,-75.24,39.47",
+        WI: "-92.89,42.49,-86.80,47.08",
+        OH: "-84.82,38.40,-80.52,41.98",
+        GA: "-85.61,30.36,-80.84,35.00",
+        OR: "-124.57,41.99,-116.46,46.29",
+        PA: "-80.52,39.72,-74.69,42.27",
+        NY: "-79.76,40.49,-71.85,45.02"
+      },
+      DEFAULT_STATES: ["CO", "VA", "WI", "OH", "GA", "OR", "PA", "NY"],
+      MIN_STATIONS: 6,
+      MAX_STATIONS: 8,
+      TDS_FACTOR: 0.64,                  // TDS (est.) mg/L = 0.64 * conductance
+      REFRESH_SECONDS: 60,               // Auto-refresh interval
+      STALE_MS: 2 * 60 * 60 * 1000,      // 2 hours -> mark station STALE
+      COOLDOWN_MS: 30 * 60 * 1000,       // 30 minutes per station+parameter alert
+      STORAGE_KEY_LOG: "wqmas_ogc_alert_log_v1",
+      STORAGE_KEY_COOLDOWN: "wqmas_ogc_alert_cooldown_v1",
+      BAD_QUALIFIERS: new Set(["Eqp", "Ice", "Fld", "Mnt", "Ssn", "Dis", "Dry", "Bkw", "Rat", "***"]),
+
+      // BIS IS 10500:2012 / WHO rule thresholds
+      RULES: {
+        phMin: 6.5,
+        phMax: 8.5,
+        turbWarn: 1.0,
+        turbUnsafe: 5.0,
+        tdsWarn: 500,
+        tdsUnsafe: 2000
+      },
+
+      // Statistical anomaly thresholds
+      ANOMALY: {
+        zThreshold: 3.5,
+        tempJumpC: 3.0
+      },
+
+      // Weighted Arithmetic WQI standards (Si) and ideal values (Vid)
+      WQI_STANDARDS: {
+        ph:   { Si: 8.5, Vid: 7.0, label: "pH" },
+        turb: { Si: 5.0, Vid: 0.0, label: "turbidity" },
+        tds:  { Si: 500, Vid: 0.0, label: "TDS (est.)" }
+      }
+    };
+
+    /* =====================================================================
+       2. APPLICATION STATE
+    ===================================================================== */
+    const STATE = {
+      mode: "LIVE",             // "LIVE" | "SAMPLE"
+      stations: [],             // Processed station objects
+      selectedSiteId: null,     // Currently inspected station ID
+      chartWindow: "7d",        // "24h" | "7d"
+      countdown: CONFIG.REFRESH_SECONDS,
+      timerHandle: null,
+      isFetching: false,
+      muted: false,
+      notificationsEnabled: false,
+      alertLog: [],
+      cooldownMap: {}
+    };
+
+    /* =====================================================================
+       3. UTILITY & STORAGE HELPERS
+    ===================================================================== */
+    function safeStorageGet(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (_err) {
+        return fallback;
+      }
+    }
+
+    function safeStorageSet(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (_err) {
+        // Ignore storage quota or file:// restrictions
+      }
+    }
+
+    function fmtNum(val, decimals = 2) {
+      if (val === null || val === undefined || Number.isNaN(val)) return "--";
+      return Number(val).toFixed(decimals);
+    }
+
+    function fmtTimeShort(ms) {
+      const d = new Date(ms);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    function fmtDateTime(ms) {
+      const d = new Date(ms);
+      const mon = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${mon}-${day} ${fmtTimeShort(ms)}`;
+    }
+
+    function fmtAge(ms) {
+      if (!ms) return "no timestamp";
+      const diffMin = Math.max(0, Math.round((Date.now() - ms) / 60000));
+      if (diffMin < 60) return `${diffMin} min ago`;
+      const hrs = Math.floor(diffMin / 60);
+      const rem = diffMin % 60;
+      return `${hrs}h ${rem}m ago`;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    /* =====================================================================
+       4. USGS MODERN OGC API FETCHING & RUNTIME STATION DISCOVERY
+       Step 1: Query latest-continuous by state bbox for all 5 parameter codes.
+       Step 2: Keep stations that report pH, turbidity, conductance, AND temp.
+       Step 3: Fetch human-readable names from monitoring-locations.
+       Step 4: Fetch 7-day history from continuous (time=P7D) in small batches.
+    ===================================================================== */
+    async function fetchJsonWithTimeout(url, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error(`USGS OGC HTTP ${res.status}`);
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function mapParamCode(code) {
+      if (code === CONFIG.PARAM_CODES.temp) return { key: "temp", isPrimaryTurb: false, unit: "°C" };
+      if (code === CONFIG.PARAM_CODES.cond) return { key: "cond", isPrimaryTurb: false, unit: "µS/cm" };
+      if (code === CONFIG.PARAM_CODES.ph) return { key: "ph", isPrimaryTurb: false, unit: "" };
+      if (code === CONFIG.PARAM_CODES.turbFNU) return { key: "turb", isPrimaryTurb: true, unit: "FNU" };
+      if (code === CONFIG.PARAM_CODES.turbNTU) return { key: "turb", isPrimaryTurb: false, unit: "NTU" };
+      return null;
+    }
+
+    function isOgcFeatureValid(props, paramKey) {
+      if (!props || props.value === null || props.value === undefined || props.value === "") return false;
+      const num = Number(props.value);
+      if (!Number.isFinite(num) || num <= -99999) return false;
+
+      if (props.qualifier) {
+        const quals = Array.isArray(props.qualifier) ? props.qualifier : String(props.qualifier).split(",");
+        for (const q of quals) {
+          if (CONFIG.BAD_QUALIFIERS.has(String(q).trim())) return false;
+        }
+      }
+
+      if (paramKey === "ph" && (num < 0 || num > 14)) return false;
+      if (paramKey === "turb" && num < 0) return false;
+      if (paramKey === "cond" && num < 0) return false;
+      if (paramKey === "temp" && (num < -10 || num > 60)) return false;
+      return true;
+    }
+
+    async function discoverStationsOgc(selectedState) {
+      const statesToQuery = selectedState === "AUTO"
+        ? CONFIG.DEFAULT_STATES
+        : [selectedState];
+
+      const paramList = [
+        CONFIG.PARAM_CODES.temp,
+        CONFIG.PARAM_CODES.cond,
+        CONFIG.PARAM_CODES.ph,
+        CONFIG.PARAM_CODES.turbFNU,
+        CONFIG.PARAM_CODES.turbNTU
+      ].join(",");
+
+      const foundIds = [];
+      const foundSet = new Set();
+
+      for (const stCode of statesToQuery) {
+        const bbox = CONFIG.STATE_BBOX[stCode];
+        if (!bbox) continue;
+
+        const qs = new URLSearchParams({
+          f: "json",
+          bbox,
+          parameter_code: paramList,
+          limit: "2500",
+          skipGeometry: "true",
+          properties: "monitoring_location_id,parameter_code,time,value,qualifier"
+        });
+
+        const url = `${CONFIG.OGC_BASE}/latest-continuous/items?${qs.toString()}`;
+        const json = await fetchJsonWithTimeout(url, 15000);
+        const features = Array.isArray(json.features) ? json.features : [];
+
+        // Group available parameters per station
+        const bySite = new Map();
+        for (const feat of features) {
+          const p = feat.properties;
+          if (!p || !p.monitoring_location_id || !p.parameter_code) continue;
+          const mapped = mapParamCode(p.parameter_code);
+          if (!mapped || !isOgcFeatureValid(p, mapped.key)) continue;
+
+          if (!bySite.has(p.monitoring_location_id)) {
+            bySite.set(p.monitoring_location_id, new Set());
+          }
+          bySite.get(p.monitoring_location_id).add(mapped.key);
+        }
+
+        for (const [siteId, paramSet] of bySite.entries()) {
+          if (paramSet.has("ph") && paramSet.has("turb") && paramSet.has("cond") && paramSet.has("temp")) {
+            if (!foundSet.has(siteId)) {
+              foundSet.add(siteId);
+              foundIds.push(siteId);
+            }
+          }
+          if (foundIds.length >= CONFIG.MAX_STATIONS) break;
+        }
+
+        if (selectedState !== "AUTO" || foundIds.length >= CONFIG.MIN_STATIONS) {
+          break;
+        }
+      }
+
+      return foundIds.slice(0, CONFIG.MAX_STATIONS);
+    }
+
+    async function fetchStationNamesOgc(siteIds) {
+      const nameMap = new Map();
+      try {
+        const qs = new URLSearchParams({
+          f: "json",
+          id: siteIds.join(","),
+          skipGeometry: "true",
+          properties: "id,monitoring_location_name"
+        });
+        const url = `${CONFIG.OGC_BASE}/monitoring-locations/items?${qs.toString()}`;
+        const json = await fetchJsonWithTimeout(url, 12000);
+        const features = Array.isArray(json.features) ? json.features : [];
+        for (const f of features) {
+          const id = f.id || (f.properties && f.properties.id);
+          const name = f.properties && f.properties.monitoring_location_name;
+          if (id && name) nameMap.set(id, name);
+        }
+      } catch (_err) {
+        // Non-fatal: fallback to site ID if name lookup fails
+      }
+      return nameMap;
+    }
+
+    async function fetchSingleStationHistoryOgc(siteId, stationName) {
+      const paramList = [
+        CONFIG.PARAM_CODES.temp,
+        CONFIG.PARAM_CODES.cond,
+        CONFIG.PARAM_CODES.ph,
+        CONFIG.PARAM_CODES.turbFNU,
+        CONFIG.PARAM_CODES.turbNTU
+      ].join(",");
+
+      const qs = new URLSearchParams({
+        f: "json",
+        monitoring_location_id: siteId,
+        parameter_code: paramList,
+        time: "P7D",
+        limit: "5000",
+        skipGeometry: "true",
+        properties: "parameter_code,time,value,qualifier"
+      });
+
+      const url = `${CONFIG.OGC_BASE}/continuous/items?${qs.toString()}`;
+      const json = await fetchJsonWithTimeout(url, 18000);
+      const features = Array.isArray(json.features) ? json.features : [];
+
+      const buckets = { ph: [], turbFNU: [], turbNTU: [], cond: [], temp: [] };
+
+      for (const feat of features) {
+        const p = feat.properties;
+        if (!p || !p.parameter_code || !p.time) continue;
+        const mapped = mapParamCode(p.parameter_code);
+        if (!mapped || !isOgcFeatureValid(p, mapped.key)) continue;
+
+        const t = Date.parse(p.time);
+        if (!Number.isFinite(t)) continue;
+        const pt = { t, v: Number(p.value) };
+
+        if (p.parameter_code === CONFIG.PARAM_CODES.turbFNU) buckets.turbFNU.push(pt);
+        else if (p.parameter_code === CONFIG.PARAM_CODES.turbNTU) buckets.turbNTU.push(pt);
+        else buckets[mapped.key].push(pt);
+      }
+
+      const useFNU = buckets.turbFNU.length > 0;
+      const turbSeries = useFNU ? buckets.turbFNU : buckets.turbNTU;
+      const turbUnit = useFNU ? "FNU" : "NTU";
+
+      const sortDedup = arr => {
+        arr.sort((a, b) => a.t - b.t);
+        const out = [];
+        for (const p of arr) {
+          if (!out.length || out[out.length - 1].t !== p.t) out.push(p);
+        }
+        return out;
+      };
+
+      const ph = sortDedup(buckets.ph);
+      const turb = sortDedup(turbSeries);
+      const cond = sortDedup(buckets.cond);
+      const temp = sortDedup(buckets.temp);
+
+      if (!ph.length || !turb.length || !cond.length || !temp.length) return null;
+
+      const tds = cond.map(p => ({
+        t: p.t,
+        v: Number((p.v * CONFIG.TDS_FACTOR).toFixed(2))
+      }));
+
+      return {
+        id: siteId.replace(/^USGS-/, ""),
+        fullId: siteId,
+        name: stationName || siteId,
+        turbUnit,
+        series: { ph, turb, cond, temp, tds }
+      };
+    }
+
+    async function fetchAllHistoriesOgc(siteIds, nameMap) {
+      // Fetch in batches of 4 (probe confirmed 5x parallel works cleanly)
+      const stations = [];
+      const batchSize = 4;
+      for (let i = 0; i < siteIds.length; i += batchSize) {
+        const slice = siteIds.slice(i, i + batchSize);
+        const batchResults = await Promise.all(
+          slice.map(id => fetchSingleStationHistoryOgc(id, nameMap.get(id)).catch(() => null))
+        );
+        for (const st of batchResults) {
+          if (st) stations.push(st);
+        }
+      }
+      return stations;
+    }
+
+    /* =====================================================================
+       5. WATER QUALITY INDEX (WEIGHTED ARITHMETIC METHOD)
+       Computes K, Wi, qi, total WQI, class label, and % contribution per parameter.
+    ===================================================================== */
+    const WQI_WEIGHTS = (() => {
+      const std = CONFIG.WQI_STANDARDS;
+      const sumInv = (1 / std.ph.Si) + (1 / std.turb.Si) + (1 / std.tds.Si);
+      const K = 1 / sumInv;
+      return {
+        K,
+        ph: K / std.ph.Si,
+        turb: K / std.turb.Si,
+        tds: K / std.tds.Si,
+        sumW: (K / std.ph.Si) + (K / std.turb.Si) + (K / std.tds.Si)
+      };
+    })();
+
+    function classifyWqi(score) {
+      if (score <= 25) return { label: "Excellent", level: "safe" };
+      if (score <= 50) return { label: "Good", level: "safe" };
+      if (score <= 75) return { label: "Poor", level: "warning" };
+      if (score <= 100) return { label: "Very Poor", level: "unsafe" };
+      return { label: "Unfit for drinking", level: "unsafe" };
+    }
+
+    function calculateWqi(phVal, turbVal, tdsVal) {
+      const std = CONFIG.WQI_STANDARDS;
+      const qPh = 100 * Math.abs(phVal - std.ph.Vid) / (std.ph.Si - std.ph.Vid);
+      const qTurb = 100 * Math.abs(turbVal - std.turb.Vid) / (std.turb.Si - std.turb.Vid);
+      const qTds = 100 * Math.abs(tdsVal - std.tds.Vid) / (std.tds.Si - std.tds.Vid);
+
+      const cPh = qPh * WQI_WEIGHTS.ph;
+      const cTurb = qTurb * WQI_WEIGHTS.turb;
+      const cTds = qTds * WQI_WEIGHTS.tds;
+      const total = cPh + cTurb + cTds;
+      const score = total / WQI_WEIGHTS.sumW;
+
+      let pctPh = 0, pctTurb = 0, pctTds = 0;
+      if (total > 0) {
+        pctPh = Math.round((cPh / total) * 100);
+        pctTurb = Math.round((cTurb / total) * 100);
+        pctTds = Math.max(0, 100 - pctPh - pctTurb);
+      }
+
+      return {
+        score,
+        cls: classifyWqi(score),
+        breakdown: { ph: pctPh, turb: pctTurb, tds: pctTds }
+      };
+    }
+
+    function buildWqiSparklineSeries(station) {
+      const phArr = station.series.ph;
+      const turbArr = station.series.turb;
+      const tdsArr = station.series.tds;
+      if (!turbArr.length || !phArr.length || !tdsArr.length) return [];
+
+      const step = Math.max(1, Math.floor(turbArr.length / 48));
+      const out = [];
+      let iPh = 0, iTds = 0;
+
+      for (let i = 0; i < turbArr.length; i += step) {
+        const pt = turbArr[i];
+        while (iPh + 1 < phArr.length && phArr[iPh + 1].t <= pt.t) iPh++;
+        while (iTds + 1 < tdsArr.length && tdsArr[iTds + 1].t <= pt.t) iTds++;
+        const w = calculateWqi(phArr[iPh].v, pt.v, tdsArr[iTds].v);
+        out.push({ t: pt.t, v: w.score });
+      }
+      return out;
+    }
+
+    /* =====================================================================
+       6. ANOMALY DETECTION (RULES + MEDIAN/MAD Z-SCORE + TEMP JUMP)
+    ===================================================================== */
+    function getMedian(arr) {
+      if (!arr.length) return 0;
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid];
+    }
+
+    function computeMedianMad(series) {
+      const vals = series.map(p => p.v);
+      const med = getMedian(vals);
+      const absDevs = vals.map(v => Math.abs(v - med));
+      const mad = getMedian(absDevs);
+      return { median: med, mad };
+    }
+
+    function modifiedZScore(x, median, mad) {
+      if (mad === 0) return 0; // Guard against division by zero
+      return (0.6745 * (x - median)) / mad;
+    }
+
+    function checkRuleForValue(param, val) {
+      const R = CONFIG.RULES;
+      if (param === "ph") {
+        if (val < R.phMin || val > R.phMax) {
+          return { severity: "UNSAFE", reason: `pH outside ${R.phMin}-${R.phMax}` };
+        }
+      } else if (param === "turb") {
+        if (val > R.turbUnsafe) return { severity: "UNSAFE", reason: `above ${R.turbUnsafe} limit` };
+        if (val > R.turbWarn) return { severity: "WARNING", reason: `above ${R.turbWarn} limit` };
+      } else if (param === "tds") {
+        if (val > R.tdsUnsafe) return { severity: "UNSAFE", reason: `above ${R.tdsUnsafe} mg/L` };
+        if (val > R.tdsWarn) return { severity: "WARNING", reason: `above ${R.tdsWarn} mg/L` };
+      }
+      return null;
+    }
+
+    function findBreachStart(series, param) {
+      let startTs = series[series.length - 1].t;
+      for (let i = series.length - 1; i >= 0; i--) {
+        if (checkRuleForValue(param, series[i].v)) {
+          startTs = series[i].t;
+        } else {
+          break;
+        }
+      }
+      return startTs;
+    }
+
+    function analyzeStation(station) {
+      const latestPh = station.series.ph[station.series.ph.length - 1];
+      const latestTurb = station.series.turb[station.series.turb.length - 1];
+      const latestTds = station.series.tds[station.series.tds.length - 1];
+      const latestTemp = station.series.temp[station.series.temp.length - 1];
+
+      const latestTimestamp = Math.max(latestPh.t, latestTurb.t, latestTds.t, latestTemp.t);
+      const isStale = (Date.now() - latestTimestamp) > CONFIG.STALE_MS;
+
+      const wqi = calculateWqi(latestPh.v, latestTurb.v, latestTds.v);
+      const sparkline = buildWqiSparklineSeries(station);
+
+      const paramMeta = {
+        ph:   { label: "pH", unit: "", latest: latestPh },
+        turb: { label: "Turbidity", unit: ` ${station.turbUnit}`, latest: latestTurb },
+        tds:  { label: "TDS (est.)", unit: " mg/L", latest: latestTds },
+        temp: { label: "Temp", unit: " °C", latest: latestTemp }
+      };
+
+      const activeAlerts = [];
+      const anomalyPoints = { ph: new Set(), turb: new Set(), tds: new Set(), temp: new Set() };
+      const stats7d = {};
+
+      for (const key of ["ph", "turb", "tds", "temp"]) {
+        const series = station.series[key];
+        const { median, mad } = computeMedianMad(series);
+        stats7d[key] = { median, mad };
+
+        for (let i = 0; i < series.length; i++) {
+          const pt = series[i];
+          const z = modifiedZScore(pt.v, median, mad);
+          const ruleHit = checkRuleForValue(key, pt.v);
+          const tempJump = key === "temp" && i > 0 && Math.abs(pt.v - series[i - 1].v) > CONFIG.ANOMALY.tempJumpC;
+
+          if (ruleHit || Math.abs(z) > CONFIG.ANOMALY.zThreshold || tempJump) {
+            anomalyPoints[key].add(pt.t);
+          }
+        }
+
+        const latest = paramMeta[key].latest;
+        const ruleHit = checkRuleForValue(key, latest.v);
+        if (ruleHit) {
+          const sinceTs = findBreachStart(series, key);
+          activeAlerts.push({
+            stationId: station.id,
+            stationName: station.name,
+            param: key,
+            paramLabel: paramMeta[key].label,
+            valueText: `${fmtNum(latest.v, key === "tds" ? 0 : 2)}${paramMeta[key].unit}`,
+            detail: `${ruleHit.reason} since ${fmtTimeShort(sinceTs)}`,
+            triggerKey: `${station.id}|${key}|RULE|${ruleHit.severity}`,
+            severity: ruleHit.severity,
+            time: latest.t
+          });
+        }
+
+        const latestZ = modifiedZScore(latest.v, median, mad);
+        if (Math.abs(latestZ) > CONFIG.ANOMALY.zThreshold) {
+          activeAlerts.push({
+            stationId: station.id,
+            stationName: station.name,
+            param: key,
+            paramLabel: paramMeta[key].label,
+            valueText: `${fmtNum(latest.v, key === "tds" ? 0 : 2)}${paramMeta[key].unit}`,
+            detail: `modified z=${fmtNum(latestZ, 1)} (med ${fmtNum(median, 1)})`,
+            triggerKey: `${station.id}|${key}|ZSCORE`,
+            severity: "WARNING",
+            time: latest.t
+          });
+        }
+
+        if (key === "temp" && series.length >= 2) {
+          const prev = series[series.length - 2];
+          const delta = latest.v - prev.v;
+          if (Math.abs(delta) > CONFIG.ANOMALY.tempJumpC) {
+            const sign = delta > 0 ? "+" : "";
+            activeAlerts.push({
+              stationId: station.id,
+              stationName: station.name,
+              param: "temp",
+              paramLabel: "Temp",
+              valueText: `${fmtNum(latest.v, 1)} °C`,
+              detail: `step jump ${sign}${fmtNum(delta, 1)} °C`,
+              triggerKey: `${station.id}|temp|JUMP`,
+              severity: "WARNING",
+              time: latest.t
+            });
+          }
+        }
+      }
+
+      let status = "SAFE";
+      if (isStale) {
+        status = "STALE";
+      } else if (activeAlerts.some(a => a.severity === "UNSAFE")) {
+        status = "UNSAFE";
+      } else if (activeAlerts.some(a => a.severity === "WARNING")) {
+        status = "WARNING";
+      }
+
+      return {
+        ...station,
+        latest: {
+          ph: latestPh.v,
+          turb: latestTurb.v,
+          tds: latestTds.v,
+          temp: latestTemp.v,
+          t: latestTimestamp
+        },
+        isStale,
+        status,
+        wqi,
+        sparkline,
+        activeAlerts,
+        anomalyPoints,
+        stats7d
+      };
+    }
+
+    /* =====================================================================
+       7. ALERTS ENGINE (LOCALSTORAGE LOG, 30-MIN COOLDOWN, WEB AUDIO, NOTIFICATIONS)
+    ===================================================================== */
+    let audioCtx = null;
+
+    function playAlarmBeep() {
+      if (STATE.muted) return;
+      try {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return;
+        if (!audioCtx) audioCtx = new AudioCtor();
+        if (audioCtx.state === "suspended") {
+          audioCtx.resume().catch(() => {});
+        }
+        const now = audioCtx.currentTime;
+        [0, 0.22].forEach(offset => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(880, now + offset);
+          gain.gain.setValueAtTime(0.06, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.14);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + offset);
+          osc.stop(now + offset + 0.15);
+        });
+      } catch (_err) {
+        // Browser autoplay policy may block audio before first click
+      }
+    }
+
+    function sendBrowserNotification(alertObj) {
+      if (!STATE.notificationsEnabled) return;
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+      try {
+        new Notification(`WQMAS ${alertObj.severity}: ${alertObj.stationId}`, {
+          body: `${alertObj.paramLabel} ${alertObj.valueText} — ${alertObj.detail}`
+        });
+      } catch (_err) {
+        // Ignore on restricted file:// origins
+      }
+    }
+
+    function processAlerts(stations) {
+      const now = Date.now();
+      const allActive = [];
+      let triggeredNew = false;
+
+      for (const st of stations) {
+        for (const alertObj of st.activeAlerts) {
+          allActive.push(alertObj);
+          const lastFired = STATE.cooldownMap[alertObj.triggerKey] || 0;
+          if (now - lastFired >= CONFIG.COOLDOWN_MS) {
+            STATE.cooldownMap[alertObj.triggerKey] = now;
+            STATE.alertLog.unshift({
+              loggedAt: now,
+              stationId: alertObj.stationId,
+              stationName: alertObj.stationName,
+              paramLabel: alertObj.paramLabel,
+              valueText: alertObj.valueText,
+              detail: alertObj.detail,
+              severity: alertObj.severity
+            });
+            triggeredNew = true;
+            sendBrowserNotification(alertObj);
+          }
+        }
+      }
+
+      if (STATE.alertLog.length > 150) {
+        STATE.alertLog = STATE.alertLog.slice(0, 150);
+      }
+
+      if (triggeredNew) {
+        safeStorageSet(CONFIG.STORAGE_KEY_LOG, STATE.alertLog);
+        safeStorageSet(CONFIG.STORAGE_KEY_COOLDOWN, STATE.cooldownMap);
+        playAlarmBeep();
+      }
+
+      renderAlertBanner(allActive);
+      renderAlertLog();
+    }
+
+    /* =====================================================================
+       8. INLINE SVG CHART & SPARKLINE RENDERERS (DEPENDENCY-FREE)
+    ===================================================================== */
+    function renderSparklineSvg(points, status) {
+      if (!points || points.length < 2) return `<span class="text-muted">--</span>`;
+      const w = 96, h = 24, pad = 2;
+      const vals = points.map(p => p.v);
+      const minV = Math.min(...vals);
+      const maxV = Math.max(...vals);
+      const span = maxV - minV || 1;
+
+      const coords = points.map((p, i) => {
+        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+        const y = h - pad - ((p.v - minV) / span) * (h - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+
+      const stroke = status === "UNSAFE" ? "#c8321e" : (status === "SAFE" ? "#4f7a52" : "#1b1b18");
+      return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+        <polyline fill="none" stroke="${stroke}" stroke-width="1.5" points="${coords}" />
+      </svg>`;
+    }
+
+    function renderDetailChartSvg(series, anomalySet, thresholds) {
+      const W = 420, H = 148;
+      const padL = 42, padR = 12, padT = 12, padB = 22;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      if (!series || series.length < 2) {
+        return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}">
+          <text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="#5e5c55" font-size="11">Insufficient readings in window</text>
+        </svg>`;
+      }
+
+      const tMin = series[0].t;
+      const tMax = series[series.length - 1].t;
+      const tSpan = tMax - tMin || 1;
+
+      const vals = series.map(p => p.v);
+      let yMin = Math.min(...vals);
+      let yMax = Math.max(...vals);
+
+      for (const th of thresholds) {
+        if (th.alwaysShow || (th.val >= yMin * 0.5 && th.val <= yMax * 1.6)) {
+          yMin = Math.min(yMin, th.val);
+          yMax = Math.max(yMax, th.val);
+        }
+      }
+
+      const yPad = (yMax - yMin) * 0.12 || 1;
+      yMin = Math.max(0, yMin - yPad);
+      yMax = yMax + yPad;
+      const ySpan = yMax - yMin || 1;
+
+      const mapX = t => padL + ((t - tMin) / tSpan) * plotW;
+      const mapY = v => padT + plotH - ((v - yMin) / ySpan) * plotH;
+
+      const linePts = series.map(p => `${mapX(p.t).toFixed(1)},${mapY(p.v).toFixed(1)}`).join(" ");
+
+      let thresholdSvg = "";
+      for (const th of thresholds) {
+        if (th.val < yMin || th.val > yMax) continue;
+        const y = mapY(th.val).toFixed(1);
+        const col = th.level === "unsafe" ? "#c8321e" : "#5e5c55";
+        thresholdSvg += `
+          <line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${col}" stroke-width="1" stroke-dasharray="4 3" />
+          <text x="${W - padR - 2}" y="${Number(y) - 3}" text-anchor="end" fill="${col}" font-size="9">${escapeHtml(th.label)}</text>
+        `;
+      }
+
+      let anomalySvg = "";
+      for (const p of series) {
+        if (anomalySet.has(p.t)) {
+          const cx = mapX(p.t).toFixed(1);
+          const cy = mapY(p.v).toFixed(1);
+          anomalySvg += `<circle cx="${cx}" cy="${cy}" r="3" fill="#c8321e" stroke="#f4f1ea" stroke-width="1" />`;
+        }
+      }
+
+      const yMid = (yMin + yMax) / 2;
+      const tMid = (tMin + tMax) / 2;
+
+      return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img">
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#c8c3b6" stroke-width="1" />
+        <line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="#c8c3b6" stroke-width="1" />
+        <line x1="${padL}" y1="${mapY(yMid).toFixed(1)}" x2="${W - padR}" y2="${mapY(yMid).toFixed(1)}" stroke="#e0dbd0" stroke-width="1" />
+
+        <text x="${padL - 5}" y="${padT + 4}" text-anchor="end" fill="#5e5c55" font-size="9">${fmtNum(yMax, yMax >= 100 ? 0 : 1)}</text>
+        <text x="${padL - 5}" y="${mapY(yMid) + 3}" text-anchor="end" fill="#5e5c55" font-size="9">${fmtNum(yMid, yMid >= 100 ? 0 : 1)}</text>
+        <text x="${padL - 5}" y="${padT + plotH + 3}" text-anchor="end" fill="#5e5c55" font-size="9">${fmtNum(yMin, yMin >= 100 ? 0 : 1)}</text>
+
+        <text x="${padL}" y="${H - 5}" text-anchor="start" fill="#5e5c55" font-size="9">${fmtDateTime(tMin)}</text>
+        <text x="${padL + plotW / 2}" y="${H - 5}" text-anchor="middle" fill="#5e5c55" font-size="9">${fmtDateTime(tMid)}</text>
+        <text x="${W - padR}" y="${H - 5}" text-anchor="end" fill="#5e5c55" font-size="9">${fmtDateTime(tMax)}</text>
+
+        ${thresholdSvg}
+        <polyline fill="none" stroke="#1b1b18" stroke-width="1.5" points="${linePts}" />
+        ${anomalySvg}
+      </svg>`;
+    }
+
+    /* =====================================================================
+       9. UI RENDERING (DASHBOARD TABLE, DETAIL PANEL, WQI RANKING, ALERTS)
+    ===================================================================== */
+    function renderSummary() {
+      const total = STATE.stations.length;
+      const safe = STATE.stations.filter(s => s.status === "SAFE").length;
+      const alertCount = STATE.stations.filter(s => s.status === "WARNING" || s.status === "UNSAFE").length;
+      const stale = STATE.stations.filter(s => s.status === "STALE").length;
+
+      document.getElementById("sum-total").textContent = total;
+      document.getElementById("sum-safe").textContent = safe;
+      document.getElementById("sum-alert").textContent = alertCount;
+      document.getElementById("sum-stale").textContent = stale;
+
+      const modeEl = document.getElementById("sum-mode");
+      const stampEl = document.getElementById("sample-stamp");
+      const sampleBtn = document.getElementById("btn-sample");
+
+      if (STATE.mode === "SAMPLE") {
+        modeEl.textContent = "SAMPLE DATA, NOT LIVE";
+        modeEl.className = "summary-v text-alert";
+        stampEl.classList.add("visible");
+        sampleBtn.textContent = "Switch to Live USGS";
+      } else {
+        modeEl.textContent = "LIVE USGS OGC";
+        modeEl.className = "summary-v text-safe";
+        stampEl.classList.remove("visible");
+        sampleBtn.textContent = "Load sample data";
+      }
+    }
+
+    function badgeClass(status) {
+      if (status === "SAFE") return "badge badge-safe";
+      if (status === "UNSAFE") return "badge badge-unsafe";
+      if (status === "WARNING") return "badge badge-warning";
+      return "badge badge-stale";
+    }
+
+    function renderStationTable() {
+      const tbody = document.getElementById("station-tbody");
+      if (!STATE.stations.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No stations available. Try another state or load sample data.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = STATE.stations.map((st, idx) => {
+        const numTag = String(idx + 1).padStart(2, "0");
+        const isSel = st.id === STATE.selectedSiteId ? " selected" : "";
+        return `<tr class="station-row${isSel}" data-site-id="${escapeHtml(st.id)}">
+          <td class="text-muted">${numTag}</td>
+          <td>
+            <span class="st-name" title="${escapeHtml(st.name)}">${escapeHtml(st.name)}</span>
+            <span class="st-sub">ID ${escapeHtml(st.id)} &middot; last reading: ${fmtAge(st.latest.t)}</span>
+          </td>
+          <td class="num">${fmtNum(st.latest.ph, 2)}</td>
+          <td class="num">${fmtNum(st.latest.turb, 1)} <span class="text-muted">${escapeHtml(st.turbUnit)}</span></td>
+          <td class="num">${fmtNum(st.latest.tds, 0)}</td>
+          <td class="num">${fmtNum(st.latest.temp, 1)}</td>
+          <td class="num"><strong>${fmtNum(st.wqi.score, 1)}</strong></td>
+          <td><span class="${badgeClass(st.status)}">${st.status}</span></td>
+          <td>${renderSparklineSvg(st.sparkline, st.status)}</td>
+        </tr>`;
+      }).join("");
+
+      tbody.querySelectorAll("tr.station-row").forEach(row => {
+        row.addEventListener("click", () => {
+          STATE.selectedSiteId = row.getAttribute("data-site-id");
+          renderStationTable();
+          renderDetailPanel();
+        });
+      });
+    }
+
+    function filterByWindow(series, windowKey) {
+      if (!series.length) return [];
+      if (windowKey === "7d") return series;
+      const latestT = series[series.length - 1].t;
+      const cutoff = latestT - 24 * 60 * 60 * 1000;
+      return series.filter(p => p.t >= cutoff);
+    }
+
+    function calcStats(series) {
+      if (!series.length) return { min: null, max: null, mean: null };
+      let min = Infinity, max = -Infinity, sum = 0;
+      for (const p of series) {
+        if (p.v < min) min = p.v;
+        if (p.v > max) max = p.v;
+        sum += p.v;
+      }
+      return { min, max, mean: sum / series.length };
+    }
+
+    function renderDetailPanel() {
+      const st = STATE.stations.find(s => s.id === STATE.selectedSiteId);
+      const emptyEl = document.getElementById("detail-empty");
+      const contentEl = document.getElementById("detail-content");
+
+      if (!st) {
+        emptyEl.style.display = "block";
+        contentEl.style.display = "none";
+        return;
+      }
+
+      emptyEl.style.display = "none";
+      contentEl.style.display = "block";
+
+      document.getElementById("detail-name").textContent = st.name;
+      document.getElementById("detail-meta").textContent =
+        `Site ${st.id} · Status: ${st.status} · WQI: ${fmtNum(st.wqi.score, 1)} (${st.wqi.cls.label}) · Last reading: ${fmtAge(st.latest.t)} (${fmtDateTime(st.latest.t)})`;
+
+      document.getElementById("btn-win-24h").classList.toggle("active-toggle", STATE.chartWindow === "24h");
+      document.getElementById("btn-win-7d").classList.toggle("active-toggle", STATE.chartWindow === "7d");
+
+      const chartConfigs = [
+        {
+          key: "ph",
+          title: "pH",
+          unit: "",
+          dec: 2,
+          thresholds: [
+            { val: CONFIG.RULES.phMin, label: "MIN 6.5", level: "unsafe", alwaysShow: true },
+            { val: CONFIG.RULES.phMax, label: "MAX 8.5", level: "unsafe", alwaysShow: true }
+          ]
+        },
+        {
+          key: "turb",
+          title: `Turbidity (${st.turbUnit})`,
+          unit: ` ${st.turbUnit}`,
+          dec: 1,
+          thresholds: [
+            { val: CONFIG.RULES.turbWarn, label: "WARN 1", level: "warning", alwaysShow: true },
+            { val: CONFIG.RULES.turbUnsafe, label: "LIMIT 5", level: "unsafe", alwaysShow: true }
+          ]
+        },
+        {
+          key: "tds",
+          title: "TDS (estimated)",
+          unit: " mg/L",
+          dec: 0,
+          thresholds: [
+            { val: CONFIG.RULES.tdsWarn, label: "WARN 500", level: "warning", alwaysShow: true },
+            { val: CONFIG.RULES.tdsUnsafe, label: "UNSAFE 2000", level: "unsafe", alwaysShow: false }
+          ]
+        },
+        {
+          key: "temp",
+          title: "Water Temperature",
+          unit: " °C",
+          dec: 1,
+          thresholds: []
+        }
+      ];
+
+      const grid = document.getElementById("charts-grid");
+      grid.innerHTML = chartConfigs.map(cfg => {
+        const windowed = filterByWindow(st.series[cfg.key], STATE.chartWindow);
+        const stats = calcStats(windowed);
+        const latestVal = st.latest[cfg.key];
+        const svg = renderDetailChartSvg(windowed, st.anomalyPoints[cfg.key], cfg.thresholds);
+
+        return `<div class="chart-box">
+          <div class="chart-top">
+            <span class="chart-label">${escapeHtml(cfg.title)}</span>
+            <span class="chart-val">${fmtNum(latestVal, cfg.dec)}${escapeHtml(cfg.unit)}</span>
+          </div>
+          <div class="chart-stats">
+            MIN ${fmtNum(stats.min, cfg.dec)} &middot; MEAN ${fmtNum(stats.mean, cfg.dec)} &middot; MAX ${fmtNum(stats.max, cfg.dec)} &middot; N=${windowed.length}
+          </div>
+          ${svg}
+        </div>`;
+      }).join("");
+    }
+
+    function renderWqiRanking() {
+      const container = document.getElementById("wqi-list");
+      if (!STATE.stations.length) {
+        container.innerHTML = `<div class="empty-state">No stations ranked yet.</div>`;
+        return;
+      }
+
+      const ranked = [...STATE.stations].sort((a, b) => a.wqi.score - b.wqi.score);
+      const maxScore = Math.max(100, ranked[ranked.length - 1].wqi.score);
+
+      container.innerHTML = ranked.map((st, idx) => {
+        const rankStr = String(idx + 1).padStart(2, "0");
+        const barPct = Math.min(100, Math.max(2, (st.wqi.score / maxScore) * 100));
+        const fillClass = st.wqi.cls.level === "safe" ? "fill-safe" : (st.wqi.cls.level === "unsafe" ? "fill-alert" : "");
+        const b = st.wqi.breakdown;
+
+        return `<div class="wqi-item">
+          <div class="wqi-row-top">
+            <span class="wqi-station" title="${escapeHtml(st.name)}">${rankStr} &middot; ${escapeHtml(st.name)}</span>
+            <span class="wqi-score">${fmtNum(st.wqi.score, 1)} <span class="text-muted">(${escapeHtml(st.wqi.cls.label)})</span></span>
+          </div>
+          <div class="wqi-bar-track">
+            <div class="wqi-bar-fill ${fillClass}" style="width:${barPct.toFixed(1)}%"></div>
+          </div>
+          <div class="wqi-breakdown">pH contributes ${b.ph}%, turbidity ${b.turb}%, TDS (est.) ${b.tds}%</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderAlertBanner(activeAlerts) {
+      const banner = document.getElementById("alert-banner");
+      const textEl = document.getElementById("alert-banner-text");
+      if (!activeAlerts.length) {
+        banner.classList.remove("visible");
+        return;
+      }
+      const preview = activeAlerts.slice(0, 2).map((a, idx) => {
+        const num = String(idx + 1).padStart(2, "0");
+        return `${num} · ${a.stationId} ${a.paramLabel} ${a.valueText}, ${a.detail}`;
+      }).join("   |   ");
+      const extra = activeAlerts.length > 2 ? `   (+${activeAlerts.length - 2} more)` : "";
+      textEl.textContent = `ACTIVE ALERTS (${activeAlerts.length}) — ${preview}${extra}`;
+      banner.classList.add("visible");
+    }
+
+    function renderAlertLog() {
+      const list = document.getElementById("alert-log-list");
+      if (!STATE.alertLog.length) {
+        list.innerHTML = `<div class="empty-state">No alerts logged. Threshold breaches and statistical spikes will appear here.</div>`;
+        return;
+      }
+
+      list.innerHTML = STATE.alertLog.map((entry, idx) => {
+        const num = String(idx + 1).padStart(2, "0");
+        const sevClass = entry.severity === "UNSAFE" ? "log-sev-unsafe" : "log-sev-warning";
+        return `<div class="log-entry">
+          <div class="log-head">
+            <span>${num} &middot; ${fmtDateTime(entry.loggedAt)} &middot; ID ${escapeHtml(entry.stationId)}</span>
+            <span class="${sevClass}">${escapeHtml(entry.severity)}</span>
+          </div>
+          <div>${escapeHtml(entry.paramLabel)} <strong>${escapeHtml(entry.valueText)}</strong>, ${escapeHtml(entry.detail)}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function showErrorStrip(msg) {
+      document.getElementById("error-strip-text").textContent = `TELEMETRY ERROR — ${msg}`;
+      document.getElementById("error-strip").classList.add("visible");
+    }
+
+    function hideErrorStrip() {
+      document.getElementById("error-strip").classList.remove("visible");
+    }
+
+    /* =====================================================================
+       10. CSV EXPORT FOR SELECTED STATION
+    ===================================================================== */
+    function downloadStationCsv() {
+      const st = STATE.stations.find(s => s.id === STATE.selectedSiteId);
+      if (!st) return;
+
+      const mapByTs = new Map();
+      const put = (arr, field) => {
+        for (const p of arr) {
+          if (!mapByTs.has(p.t)) mapByTs.set(p.t, { t: p.t });
+          mapByTs.get(p.t)[field] = p.v;
+        }
+      };
+      put(st.series.ph, "ph");
+      put(st.series.turb, "turb");
+      put(st.series.cond, "cond");
+      put(st.series.tds, "tds");
+      put(st.series.temp, "temp");
+
+      const rows = [...mapByTs.values()].sort((a, b) => a.t - b.t);
+      const header = `timestamp_iso,site_id,ph,turbidity_${st.turbUnit},conductance_uScm,tds_estimated_mgL,temperature_C`;
+      const lines = [header];
+      for (const r of rows) {
+        lines.push([
+          new Date(r.t).toISOString(),
+          st.id,
+          r.ph ?? "",
+          r.turb ?? "",
+          r.cond ?? "",
+          r.tds ?? "",
+          r.temp ?? ""
+        ].join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `station_${st.id}_7d_${STATE.mode.toLowerCase()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* =====================================================================
+       11. BUILT-IN SAMPLE DATASET (OFFLINE FALLBACK)
+       Always clearly stamped "SAMPLE DATA, NOT LIVE" when active.
+    ===================================================================== */
+    function generateSampleStations() {
+      const now = Date.now();
+      const stepMs = 60 * 60 * 1000;
+      const count = 168;
+
+      const specs = [
+        { id: "SAMPLE-01", name: "CLEAR CREEK ABOVE GOLDEN (SAMPLE)", ph: 7.3, turb: 0.6, cond: 180, temp: 11.5, mode: "safe" },
+        { id: "SAMPLE-02", name: "SHENANDOAH RIVER AT MILLVILLE (SAMPLE)", ph: 7.6, turb: 2.4, cond: 340, temp: 14.2, mode: "turbWarn" },
+        { id: "SAMPLE-03", name: "FOX RIVER BELOW DAM (SAMPLE)", ph: 8.8, turb: 6.4, cond: 920, temp: 15.0, mode: "unsafe" },
+        { id: "SAMPLE-04", name: "SCIOTO RIVER AT COLUMBUS (SAMPLE)", ph: 7.5, turb: 1.4, cond: 860, temp: 13.8, mode: "tdsWarn" },
+        { id: "SAMPLE-05", name: "CHATTAHOOCHEE R. NEAR ROSWELL (SAMPLE)", ph: 7.2, turb: 0.8, cond: 210, temp: 16.0, mode: "tempJump" },
+        { id: "SAMPLE-06", name: "UPPER CACHE LA POUDRE (SAMPLE)", ph: 7.1, turb: 0.5, cond: 140, temp: 9.2, mode: "stale" }
+      ];
+
+      return specs.map((sp, sIdx) => {
+        const endTs = sp.mode === "stale" ? now - 4 * 60 * 60 * 1000 : now - 10 * 60 * 1000;
+        const series = { ph: [], turb: [], cond: [], temp: [], tds: [] };
+
+        for (let i = 0; i < count; i++) {
+          const t = endTs - (count - 1 - i) * stepMs;
+          const wave = Math.sin((i + sIdx * 5) / 8);
+          const noise = Math.cos((i * 3 + sIdx) / 5) * 0.5;
+
+          let ph = sp.ph + wave * 0.12 + noise * 0.05;
+          let turb = Math.max(0.2, sp.turb + wave * 0.25 + noise * 0.15);
+          let cond = Math.max(50, sp.cond + wave * 18 + noise * 8);
+          let temp = sp.temp + Math.sin(i / 4) * 0.8 + noise * 0.2;
+
+          if (sp.mode === "unsafe" && i >= count - 6) {
+            turb = 6.2 + (i - (count - 6)) * 0.25;
+            ph = 8.75;
+          }
+          if (sp.mode === "turbWarn" && i === count - 1) {
+            turb = 4.6;
+          }
+          if (sp.mode === "tempJump" && i === count - 1) {
+            temp = series.temp[series.temp.length - 1].v + 3.6;
+          }
+
+          series.ph.push({ t, v: Number(ph.toFixed(2)) });
+          series.turb.push({ t, v: Number(turb.toFixed(2)) });
+          series.cond.push({ t, v: Number(cond.toFixed(1)) });
+          series.tds.push({ t, v: Number((cond * CONFIG.TDS_FACTOR).toFixed(2)) });
+          series.temp.push({ t, v: Number(temp.toFixed(2)) });
+        }
+
+        return {
+          id: sp.id,
+          name: sp.name,
+          turbUnit: "FNU",
+          series
+        };
+      });
+    }
+
+    /* =====================================================================
+       12. MAIN CONTROLLER & AUTO-REFRESH LOOP
+    ===================================================================== */
+    async function runLiveRefresh() {
+      if (STATE.isFetching) return;
+      STATE.isFetching = true;
+      STATE.mode = "LIVE";
+      hideErrorStrip();
+
+      const stateCode = document.getElementById("state-select").value;
+      const statusTag = document.getElementById("table-status-tag");
+      statusTag.textContent = `Discovering USGS stations (${stateCode})...`;
+
+      try {
+        const siteIds = await discoverStationsOgc(stateCode);
+        if (!siteIds.length) {
+          throw new Error(`No active stations in ${stateCode} reported all 4 parameters (pH, turbidity, conductance, temp).`);
+        }
+
+        statusTag.textContent = `Loading names & 7-day history for ${siteIds.length} stations...`;
+        const nameMap = await fetchStationNamesOgc(siteIds);
+        const rawStations = await fetchAllHistoriesOgc(siteIds, nameMap);
+
+        if (!rawStations.length) {
+          throw new Error("7-day history request returned no complete station series.");
+        }
+
+        STATE.stations = rawStations.map(analyzeStation);
+        if (!STATE.stations.some(s => s.id === STATE.selectedSiteId)) {
+          STATE.selectedSiteId = STATE.stations[0].id;
+        }
+
+        statusTag.textContent = `Updated ${fmtTimeShort(Date.now())} · ${STATE.stations.length} stations`;
+        renderSummary();
+        renderStationTable();
+        renderDetailPanel();
+        renderWqiRanking();
+        processAlerts(STATE.stations);
+      } catch (err) {
+        statusTag.textContent = "Live poll failed";
+        showErrorStrip(err && err.message ? err.message : "Network or USGS OGC API failure.");
+      } finally {
+        STATE.isFetching = false;
+        STATE.countdown = CONFIG.REFRESH_SECONDS;
+      }
+    }
+
+    function activateSampleData() {
+      hideErrorStrip();
+      STATE.mode = "SAMPLE";
+      const raw = generateSampleStations();
+      STATE.stations = raw.map(analyzeStation);
+      STATE.selectedSiteId = STATE.stations[0].id;
+
+      document.getElementById("table-status-tag").textContent = "SAMPLE DATA, NOT LIVE · 6 synthetic stations";
+      renderSummary();
+      renderStationTable();
+      renderDetailPanel();
+      renderWqiRanking();
+      processAlerts(STATE.stations);
+    }
+
+    function startCountdownLoop() {
+      if (STATE.timerHandle) clearInterval(STATE.timerHandle);
+      const box = document.getElementById("countdown-box");
+
+      STATE.timerHandle = setInterval(() => {
+        if (STATE.mode === "SAMPLE") {
+          box.textContent = "SAMPLE MODE";
+          return;
+        }
+        if (STATE.isFetching) {
+          box.textContent = "POLLING...";
+          return;
+        }
+        STATE.countdown -= 1;
+        if (STATE.countdown <= 0) {
+          STATE.countdown = CONFIG.REFRESH_SECONDS;
+          runLiveRefresh();
+        }
+        box.textContent = `NEXT POLL ${String(STATE.countdown).padStart(2, "0")}s`;
+      }, 1000);
+    }
+
+    function updateMuteButtons() {
+      const label = STATE.muted ? "Alarm: MUTED" : "Alarm: ON";
+      document.getElementById("btn-mute").textContent = label;
+      document.getElementById("btn-banner-mute").textContent = STATE.muted ? "Unmute Alarm" : "Mute Alarm";
+    }
+
+    /* =====================================================================
+       13. EVENT WIRING & INITIALIZATION
+    ===================================================================== */
+    function init() {
+      STATE.alertLog = safeStorageGet(CONFIG.STORAGE_KEY_LOG, []);
+      STATE.cooldownMap = safeStorageGet(CONFIG.STORAGE_KEY_COOLDOWN, {});
+      renderAlertLog();
+      updateMuteButtons();
+
+      document.getElementById("state-select").addEventListener("change", () => {
+        runLiveRefresh();
+      });
+
+      document.getElementById("btn-refresh").addEventListener("click", () => {
+        runLiveRefresh();
+      });
+
+      document.getElementById("btn-retry").addEventListener("click", () => {
+        runLiveRefresh();
+      });
+
+      document.getElementById("btn-error-sample").addEventListener("click", () => {
+        activateSampleData();
+      });
+
+      document.getElementById("btn-sample").addEventListener("click", () => {
+        if (STATE.mode === "SAMPLE") {
+          runLiveRefresh();
+        } else {
+          activateSampleData();
+        }
+      });
+
+      const toggleMute = () => {
+        STATE.muted = !STATE.muted;
+        updateMuteButtons();
+      };
+      document.getElementById("btn-mute").addEventListener("click", toggleMute);
+      document.getElementById("btn-banner-mute").addEventListener("click", toggleMute);
+
+      document.getElementById("btn-notify").addEventListener("click", async () => {
+        const btn = document.getElementById("btn-notify");
+        if (typeof Notification === "undefined") {
+          btn.textContent = "Notifications Unsupported";
+          return;
+        }
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === "granted") {
+            STATE.notificationsEnabled = true;
+            btn.textContent = "Notifications: ON";
+          } else {
+            btn.textContent = "Notifications: Blocked";
+          }
+        } catch (_err) {
+          btn.textContent = "Notifications Unavailable";
+        }
+      });
+
+      document.getElementById("btn-win-24h").addEventListener("click", () => {
+        STATE.chartWindow = "24h";
+        renderDetailPanel();
+      });
+
+      document.getElementById("btn-win-7d").addEventListener("click", () => {
+        STATE.chartWindow = "7d";
+        renderDetailPanel();
+      });
+
+      document.getElementById("btn-csv").addEventListener("click", downloadStationCsv);
+
+      document.getElementById("btn-clear-log").addEventListener("click", () => {
+        STATE.alertLog = [];
+        STATE.cooldownMap = {};
+        safeStorageSet(CONFIG.STORAGE_KEY_LOG, []);
+        safeStorageSet(CONFIG.STORAGE_KEY_COOLDOWN, {});
+        renderAlertLog();
+      });
+
+      startCountdownLoop();
+      runLiveRefresh();
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
